@@ -13,8 +13,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.9
-      - run: gradle assembleDebug --no-daemon
+      - name: Build
         working-directory: StoryToons
+        run: |
+          gradle assembleDebug --no-daemon 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+      - name: Show errors
+        if: failure()
+        working-directory: StoryToons
+        run: |
+          echo '## Build errors' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E '^e: ' build.log | sed 's#file:///.*/StoryToons/app/src/main/java/com/storytoons/app/##' | head -30 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v4
         with:
           name: StoryToons-debug
